@@ -26,12 +26,15 @@ CSpanningTree SpanningTreeKruskal(CGraph& graph)
 	int label = 1;
 	for (CVertex& v : graph.m_Vertices) v.m_KruskalLabel = label++;
 
-	while (!queue.empty()) {
+	while (!queue.empty()) 
+	{
 		CEdge* pE = queue.top();
-		if (pE->m_pOrigin->m_KruskalLabel != pE->m_pDestination->m_KruskalLabel) {
+		if (pE->m_pOrigin->m_KruskalLabel != pE->m_pDestination->m_KruskalLabel) 
+		{
 			tree.m_Edges.push_back(pE);
 			int l2 = pE->m_pDestination->m_KruskalLabel;
-			for (CVertex& v : graph.m_Vertices) {
+			for (CVertex& v : graph.m_Vertices) 
+			{
 				if (v.m_KruskalLabel == l2) v.m_KruskalLabel = pE->m_pOrigin->m_KruskalLabel;
 			}
 		}
