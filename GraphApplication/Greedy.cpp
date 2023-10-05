@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Graph.h"
-#include <queue>
 #include <list>
 // SalesmanTrackGreedy =========================================================
 
@@ -9,48 +8,60 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
 	if (graph.m_Vertices.empty() || graph.m_Edges.empty())
 		return CTrack(&graph);
 	
-	struct comparator {
-		bool operator()(CVertex* pV1, CVertex* pV2) {
-			return pV1->m_DijkstraDistance > pV2->m_DijkstraDistance;
-		}
-	};
-	priority_queue<CVertex*, std::vector<CVertex*>, comparator> candidats;
+	list<CVertex*> candidats;
+	list<CEdge*> camino;
 
 	for (CVertex* v : visits.m_Vertices)
 		if (v != visits.m_Vertices.front() && v != visits.m_Vertices.back())
-			candidats.push(v);
-	
+			candidats.push_back(v);
 
-	CVertex* vActual = visits.m_Vertices.front();
-	CVertex* vNext = NULL;
-
-	list<CEdge*> camino;
-
-	while (!candidats.empty())
+	if (candidats.empty()) //No hi han candidats
 	{
-		Dijkstra(graph, vActual);
-		vNext = candidats.top();
-
-		/*DEBO BUSCAR ENTRE LOS MAS PEQUEÑOS A PARTIR DE VACTUAL, BORRAR BUCLE DE ABAJO Y QUITAR PRIORITY QUEUE (creo)*/
-
-		for (CEdge* edge : vActual->m_Edges)
+		for (CEdge* edge : visits.m_Vertices.front()->m_Edges)
 		{
-			if (edge->m_pDestination == vNext)
+			if (edge->m_pDestination == visits.m_Vertices.back())
 			{
 				camino.push_back(edge);
 				break;
 			}
 		}
+	}
+	
+	CVertex* vActual = visits.m_Vertices.front();
+	CVertex* vNext = NULL;
 
-		candidats.pop();
+	while (!candidats.empty())
+	{
+		DijkstraQueue(graph, vActual);
+
+		vNext = NULL;
+		double min = numeric_limits<double>::max();
+
+		for (CVertex* v : candidats)
+		{
+			if (v->m_DijkstraDistance < min)
+			{
+				min = v->m_DijkstraDistance;
+				vNext = v;
+			}
+		}
+
+		for (CEdge* e : vActual->m_Edges)
+		{
+			if (e->m_pDestination == vNext)
+			{
+				camino.push_back(e);
+				break;
+			}
+		}
+
+		candidats.remove(vNext);
 		vActual = vNext;
 	}
 
 	CTrack track(&graph);
-	for (CEdge* edge : camino)
-	{
-		track.AddLast(edge);
-	}
+	for (CEdge* e : camino)
+		track.AddLast(e);
 
 	return track;
 }
