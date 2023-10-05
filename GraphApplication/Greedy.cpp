@@ -42,6 +42,7 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits& visits) {
 			camiVaV1.push(aux->m_pDijkstraPrevious);
 			aux = (aux->m_pDijkstraPrevious->m_pOrigin != aux) ? aux->m_pDijkstraPrevious->m_pOrigin : aux->m_pDijkstraPrevious->m_pDestination;
 		}
+
 		// Afegim el cami trobat en ordre invers
 		while(!camiVaV1.empty())
 		{
@@ -49,7 +50,6 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits& visits) {
 			camiVaV1.pop();
 		}
 		
-
 		candidats.remove(vNext);
 		vActual = vNext;
 	}
@@ -68,13 +68,13 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits& visits) {
 		camiVaV1.push(aux->m_pDijkstraPrevious);
 		aux = (aux->m_pDijkstraPrevious->m_pOrigin != aux) ? aux->m_pDijkstraPrevious->m_pOrigin : aux->m_pDijkstraPrevious->m_pDestination;
 	}
+
 	// Afegim el cami trobat en ordre invers
 	while (!camiVaV1.empty())
 	{
 		camino.push_back(camiVaV1.top());
 		camiVaV1.pop();
 	}
-
 
 	CTrack track(&graph);
 	for (CEdge* e : camino)
