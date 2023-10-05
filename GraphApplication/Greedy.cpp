@@ -28,13 +28,12 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
 	}
 	
 	CVertex* vActual = visits.m_Vertices.front();
-	CVertex* vNext = NULL;
 
 	while (!candidats.empty())
 	{
-		DijkstraQueue(graph, vActual);
+		Dijkstra(graph, vActual);
 
-		vNext = NULL;
+		CVertex* vNext = NULL;
 		double min = numeric_limits<double>::max();
 
 		for (CVertex* v : candidats)
@@ -46,12 +45,15 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
 			}
 		}
 
-		for (CEdge* e : vActual->m_Edges)
+		if (vNext)
 		{
-			if (e->m_pDestination == vNext)
+			for (CEdge* e : vActual->m_Edges)
 			{
-				camino.push_back(e);
-				break;
+				if (e->m_pDestination == vNext)
+				{
+					camino.push_back(e);
+					break;
+				}
 			}
 		}
 
