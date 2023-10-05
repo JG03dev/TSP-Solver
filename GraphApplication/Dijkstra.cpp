@@ -22,12 +22,16 @@ void Dijkstra(CGraph& graph, CVertex *pStart)
 	while (pActual != NULL)
 	{
 		//Recorre tots els veïns v de pActual i fer el següent
-		for (CEdge* vei : pActual->m_Edges)
+		for (CEdge* vei : pActual->m_Edges){
 			/*Si la distància de v és més grossa que la distància del vèrtex actual més la longitud de l’aresta
 				que els uneix, actualitzar la distancia de v amb la distància del vèrtex actual més la longitud
 				de l’aresta que els uneix*/
-			if (pActual->m_DijkstraDistance + vei->m_Length < vei->m_pDestination->m_DijkstraDistance)
+			if (pActual->m_DijkstraDistance + vei->m_Length < vei->m_pDestination->m_DijkstraDistance){
 				vei->m_pDestination->m_DijkstraDistance = vei->m_Length + pActual->m_DijkstraDistance;
+				vei->m_pDestination->m_pDijkstraPrevious = vei;
+			}
+		}
+
 		// Marcar pActual com visitat
 		pActual->m_DijkstraVisit = true;
 
@@ -84,6 +88,7 @@ void DijkstraQueue(CGraph& graph, CVertex *pStart)
 			if (va->m_DijkstraDistance + vei->m_Length < vei->m_pDestination->m_DijkstraDistance)
 			{
 				vei->m_pDestination->m_DijkstraDistance = vei->m_Length + va->m_DijkstraDistance;
+				vei->m_pDestination->m_pDijkstraPrevious = vei;
 				queue.push(vei->m_pDestination);
 			}
 		
