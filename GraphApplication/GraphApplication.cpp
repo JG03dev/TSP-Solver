@@ -28,6 +28,7 @@ CString NombreAlumno2 = "Jan";
 CString ApellidosAlumno2 = "Gras Serra";
 CString NIUAlumno2 = "1636517"; // NIU alumno2
 
+
 bool CheckNIU(const char* niu)
 {
 	if (strlen(niu) != 7) return false;
