@@ -1,13 +1,12 @@
 #include "pch.h"
 #include "Graph.h"
-#include <list>
+#include <stack>
 // SalesmanTrackGreedy =========================================================
 
-CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
-{
+CTrack SalesmanTrackGreedy(CGraph& graph, CVisits& visits) {
 	if (graph.m_Vertices.empty() || graph.m_Edges.empty())
 		return CTrack(&graph);
-	
+
 	list<CVertex*> candidats;
 	list<CEdge*> camino;
 
@@ -15,27 +14,17 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
 		if (v != visits.m_Vertices.front() && v != visits.m_Vertices.back())
 			candidats.push_back(v);
 
-	if (candidats.empty()) //No hi han candidats
-	{
-		for (CEdge* edge : visits.m_Vertices.front()->m_Edges)
-		{
-			if (edge->m_pDestination == visits.m_Vertices.back())
-			{
-				camino.push_back(edge);
-				break;
-			}
-		}
-	}
-	
 	CVertex* vActual = visits.m_Vertices.front();
+	CVertex* vNext = NULL;
 
 	while (!candidats.empty())
 	{
-		Dijkstra(graph, vActual);
+		DijkstraQueue(graph, vActual);
 
-		CVertex* vNext = NULL;
+		vNext = NULL;
 		double min = numeric_limits<double>::max();
 
+		// Trobar el seguent candidat
 		for (CVertex* v : candidats)
 		{
 			if (v->m_DijkstraDistance < min)
@@ -45,20 +34,46 @@ CTrack SalesmanTrackGreedy(CGraph& graph, CVisits &visits)
 			}
 		}
 
-		if (vNext)
+		//Buscar cam� per anar fins al seguent candidat
+		CVertex* aux = vNext;
+		stack<CEdge*> camiVaV1; //Stack auxiliar per recolectar el cami de v a v1 (vActual a vNext)
+		while (aux != vActual)
 		{
-			for (CEdge* e : vActual->m_Edges)
-			{
-				if (e->m_pDestination == vNext)
-				{
-					camino.push_back(e);
-					break;
-				}
-			}
+			camiVaV1.push(aux->m_pDijkstraPrevious);
+			aux = (aux->m_pDijkstraPrevious->m_pOrigin != aux) ? aux->m_pDijkstraPrevious->m_pOrigin : aux->m_pDijkstraPrevious->m_pDestination;
 		}
 
+		// Afegim el cami trobat en ordre invers
+		while(!camiVaV1.empty())
+		{
+			camino.push_back(camiVaV1.top());
+			camiVaV1.pop();
+		}
+		
 		candidats.remove(vNext);
 		vActual = vNext;
+	}
+
+	// Calcular camino hasta el ultimo nodo a partir de vActual
+	DijkstraQueue(graph, vActual);
+
+	vNext = visits.m_Vertices.back();
+	double min = numeric_limits<double>::max();
+
+	//Buscar cam� per anar fins al seguent candi
+	CVertex* aux = vNext;
+	stack<CEdge*> camiVaV1; //Stack auxiliar per recolectar el cami de v a v1 (vActual a vNext)
+	while (aux != vActual)
+	{
+		camiVaV1.push(aux->m_pDijkstraPrevious);
+		aux = (aux->m_pDijkstraPrevious->m_pOrigin != aux) ? aux->m_pDijkstraPrevious->m_pOrigin : aux->m_pDijkstraPrevious->m_pDestination;
+	}
+
+	// Afegim el cami trobat en ordre invers
+	while (!camiVaV1.empty())
+	{
+		camino.push_back(camiVaV1.top());
+		camiVaV1.pop();
 	}
 
 	CTrack track(&graph);

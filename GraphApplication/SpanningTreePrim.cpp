@@ -11,8 +11,17 @@ using namespace std;
 
 CSpanningTree SpanningTreePrim(CGraph& graph)
 {
-	if (graph.m_Edges.empty() || graph.m_Vertices.empty())
-		return CSpanningTree(&graph);
+	if (graph.m_Edges.empty() || graph.m_Vertices.empty())	return CSpanningTree(&graph);
+
+	for (CVertex& v : graph.m_Vertices) v.m_PrimInTree = false;
+
+	CVertex* fV = &graph.m_Vertices.front();
+	fV->m_PrimInTree = true;
+
+	//Comenï¿½ar amb el primer vï¿½rtex de la llista de m_Vertices
+	CSpanningTree tree(&graph);
+
+	//Cua amb prioritat dï¿½arestes que connecten vï¿½rtex de lï¿½arbre amb altres que encara no sï¿½n de lï¿½arbre.
 
 	struct comparator {
 		bool operator()(CEdge* pE1, CEdge* pE2) {
@@ -21,48 +30,37 @@ CSpanningTree SpanningTreePrim(CGraph& graph)
 	};
 	priority_queue<CEdge*, std::vector<CEdge*>, comparator> queue;
 
-	CSpanningTree tree(&graph);
+	// Afegim arestes connectades
+	for (CEdge* e : fV->m_Edges) queue.push(e);
 
-	// Tots els vertex del graf no perteneixen a l'arbre.
-	for (CVertex& v : graph.m_Vertices) v.m_PrimInTree = false;
+	int vertex_afegits = 1; //Contador per comptar els vertex que hem afegit
 
-	// Començar amb el primer vèrtex de la llista de m_Vertices.
-	CVertex* firstV = &graph.m_Vertices.front();
-	firstV->m_PrimInTree = true;
-	
-	// Agafar arestes connecatades al primer vertex.
-	for (CEdge* e : firstV->m_Edges) queue.push(e);
-
-	// Contador de vertexs del arbre.
-	int count = 1;
-
-	while (!queue.empty() && count != graph.GetNVertices()) 
+	while (!queue.empty() && vertex_afegits < graph.GetNVertices())
 	{
-		// Obtenir aresta de menor cost.
+
 		CEdge* pE = queue.top();
 		queue.pop();
 
-		// Creem un punter auxiliar on guardem el vertex que no estigui visitat.
-		CVertex* auxiliarVertex = nullptr;
+		// Si l'origen o el destï¿½ ja esta a l'arbre agafem la destinacio
+		CVertex* pV;
 		if (!pE->m_pOrigin->m_PrimInTree)
-			auxiliarVertex = pE->m_pOrigin;
+			pV = pE->m_pOrigin;
+		else if (!pE->m_pDestination->m_PrimInTree)
+			pV = pE->m_pDestination;
 		else
-			if (!pE->m_pDestination->m_PrimInTree)
-				auxiliarVertex = pE->m_pDestination;
-		
-		// Si tots dos estan visitats mirem una altra aresta.
-		if (auxiliarVertex == nullptr)
 			continue;
-
-		// Marquem vertex com visitat, guardem aresta. 
-		auxiliarVertex->m_PrimInTree = true;
-		tree.m_Edges.push_back(pE);
 		
-		// Afegim les noves arestes a la cua.
-		for (CEdge* e : auxiliarVertex->m_Edges)
+		//Si no esta a l'arbre afegim tant aresta com vertex i el marquem a dins del PrimInTree
+		tree.Add(pE);
+		pV->m_PrimInTree = true;
+		vertex_afegits++;
+		
+		// Afegim les noves arestes 
+		for (CEdge* e : pV->m_Edges)
 			if (!e->m_pOrigin->m_PrimInTree || !e->m_pDestination->m_PrimInTree)
 				queue.push(e);
-		count++;
 	}
+
 	return tree;
+
 }
