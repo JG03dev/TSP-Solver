@@ -56,41 +56,46 @@ void Dijkstra(CGraph& graph, CVertex *pStart)
 void DijkstraQueue(CGraph& graph, CVertex *pStart)
 {
 	struct comparator {
-		bool operator()(CVertex* pE1, CVertex* pE2) {
-			return pE1->m_DijkstraDistance > pE2->m_DijkstraDistance;
+		bool operator()(pair<double, CVertex*> pE1, pair<double, CVertex*> pE2) {
+			return pE1.first > pE2.first;
 		}
 	};
-	priority_queue<CVertex*, std::vector<CVertex*>, comparator> queue;
+	
+	priority_queue<pair<double, CVertex*>, std::vector<pair<double, CVertex*>>, comparator> queue;
 
 	//Inicialitzar les dist�ncies dels v�rtexs a infinit excepte la del v�rtex pStart que ser� 0 (double m_DijkstraDistance).
 	for (CVertex& v : graph.m_Vertices) v.m_DijkstraDistance = numeric_limits<double>::max();
 	pStart->m_DijkstraDistance = 0;
+	double newDist;
 	//Marcar tots el v�rtex com no visitats (bool m_DijkstraVisit).
 	for (CVertex& v : graph.m_Vertices) v.m_DijkstraVisit = false;
 
 	//pActual ser� el v�rtex actual que l�inicialitzarem amb el v�rtex pStart
-	queue.push(pStart);
+	queue.push(pair<double, CVertex*>(0.0, pStart));
 
 	//Repetir mentre pActual!=NULL
 	while (!queue.empty())
 	{
-		CVertex* va = queue.top();
+		CVertex* va = queue.top().second;
+		double distVa = queue.top().first;
 		queue.pop();
-
-		if (va->m_DijkstraVisit)
-			continue;
 
 		//Recorre tots els ve�ns v de pActual i fer el seg�ent
 		for (CEdge* vei : va->m_Edges)
+		{
+			if (vei->m_pDestination->m_DijkstraVisit)
+				continue;
 			/*Si la dist�ncia de v �s m�s grossa que la dist�ncia del v�rtex actual m�s la longitud de l�aresta
 				que els uneix, actualitzar la distancia de v amb la dist�ncia del v�rtex actual m�s la longitud
 				de l�aresta que els uneix*/
-			if (va->m_DijkstraDistance + vei->m_Length < vei->m_pDestination->m_DijkstraDistance)
+			if (distVa + vei->m_Length < vei->m_pDestination->m_DijkstraDistance)
 			{
-				vei->m_pDestination->m_DijkstraDistance = vei->m_Length + va->m_DijkstraDistance;
+				newDist = vei->m_Length + distVa;
+				vei->m_pDestination->m_DijkstraDistance = newDist;
 				vei->m_pDestination->m_pDijkstraPrevious = vei;
-				queue.push(vei->m_pDestination);
+				queue.push(pair<double, CVertex*>(newDist, vei->m_pDestination));
 			}
+		}
 		
 		// Marcar pActual com visitat
 		va->m_DijkstraVisit = true;
