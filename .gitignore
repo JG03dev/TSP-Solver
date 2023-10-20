@@ -460,6 +460,5 @@ FodyWeavers.xsd
 *.html
 *.html5
 
-# ini configuration file
-*.ini
+
 
