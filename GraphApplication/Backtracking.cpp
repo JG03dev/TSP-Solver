@@ -21,8 +21,12 @@ struct NodeCami {
 bool visitedAllNodes(NodeCami* pAnterior) {
 	while (pAnterior)
 	{
-		// MIRAR SI VERTEXTOVISIT ES TRUE I JAHE PASAT ES TRUE, SI FALLA EL JAHEPASAT DELVOLVER FALSE.
+		if (pAnterior->m_pEdge->m_pOrigin->m_VertexToVisit && !pAnterior->m_pEdge->m_pOrigin->m_JaHePassat) {
+			return false;
+		}
+		pAnterior = pAnterior->m_pAnterior;
 	}
+	return true;
 }
 
 void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
@@ -38,7 +42,6 @@ void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
 				}
 				LenCamiMesCurt = LenCamiActual;
 			}
-
 		}
 	}
 	else if (LenCamiActual < LenCamiMesCurt) {
@@ -46,7 +49,7 @@ void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
 		NodeCami node;
 		node.m_pAnterior = pAnterior;
 		for (CEdge* pE : pActual->m_Edges) {
-			if (!pE->m_pDestination->m_JaHePassat) {
+			if (!pE->m_pDestination->m_JaHePassat && !pE->m_pDestination->m_VertexToVisit) {
 				node.m_pEdge = pE;
 				LenCamiActual += pE->m_Length;
 				SalesmanTrackBacktrackingRec(&node, pE->m_pDestination);
@@ -105,6 +108,7 @@ CTrack SalesmanTrackBacktracking(CGraph &graph, CVisits &visits)
 	// Hay que pasar por todos los que sean vertex to visit.
 	for (CVertex& v : graph.m_Vertices) v.m_VertexToVisit = false;
 	for (CVertex* v : visits.m_Vertices) v->m_VertexToVisit = true;
+	
 	
 	CVertex* pInici = visits.m_Vertices.front();
 	vDesti = visits.m_Vertices.back();
