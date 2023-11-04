@@ -87,21 +87,11 @@ CTrack SalesmanTrackBacktracking(CGraph& graph, CVisits& visits)
 }
 
 
-
-
-
-
 // =============================================================================
 // SalesmanTrackBacktrackingGreedy =============================================
 // =============================================================================
 
-CVertex* accedir(CVisits& visits, int ad)
-{
-	auto l_front = visits.m_Vertices.begin();
-	return *std::next(l_front, ad);
-}
-
-void SalesmanTrackBacktrackingGreedyRec(list<int>& caminoFinal, CVisits& visits, std::vector<std::vector<std::pair<CTrack, double>>> &matrix_dijkstra, CVertex* pActual)
+void SalesmanTrackBacktrackingGreedyRec(list<int>& caminoFinal, CVisits& visits, std::vector<std::vector<std::pair<CTrack, double>>>& matrix_dijkstra, CVertex* pActual)
 {
 	if (pActual == vDesti && indexVisits.size() != 1) // Si fulla i NO estem a l'inici (en cas de que inici i fi siguin iguals)
 	{
@@ -110,6 +100,7 @@ void SalesmanTrackBacktrackingGreedyRec(list<int>& caminoFinal, CVisits& visits,
 			LenCamiMesCurt = LenCamiActual;
 			caminoFinal = indexVisits;
 		}
+		return;
 	}
 	else if (LenCamiActual < LenCamiMesCurt && !pActual->m_JaHePassat) {
 		toVisitCounter++;
@@ -119,8 +110,12 @@ void SalesmanTrackBacktrackingGreedyRec(list<int>& caminoFinal, CVisits& visits,
 
 		for (int i = 0; i < visits.m_Vertices.size(); i++) // Acces al desti
 		{
+			// MODIFICACION AQUI!
+			if (indexVisits.back() == i)
+				continue;
+
 			// Accedim al vertex
-			CVertex* pDesti = accedir(visits, i);
+			CVertex* pDesti = *std::next(visits.m_Vertices.begin(), i);
 			if (!pDesti->m_JaHePassat || (i > 0 && pDesti == vDesti)) // Cas especial on acceptem el inici quan es tambe el desti
 			{
 				LenCamiActual += matrix_dijkstra[indexVisits.back()][i].second;
@@ -137,20 +132,16 @@ void SalesmanTrackBacktrackingGreedyRec(list<int>& caminoFinal, CVisits& visits,
 
 		// Tornem a l'estat anterior!
 		pActual->m_JaHePassat = stateActualAux;
-
 	}
 }
 
-CTrack getDijkstraPrevious(CGraph* pGraph, CVertex* vo, CVertex* vd)
+CTrack getDijkstraPrevious(CVertex* vo, CVertex* vd)
 {
-	CTrack camino = CTrack(pGraph);
+	CTrack camino = CTrack(NULL);
 	CVertex* auxVertex = vd;
 	while (auxVertex != vo)
 	{
-		// Añadimos vertex de tal manera que al final quede vo->...->vd
 		camino.AddFirst(auxVertex->m_pDijkstraPrevious);
-
-		// Recorremos los DijkstraPrevious
 		if (auxVertex == auxVertex->m_pDijkstraPrevious->m_pDestination)
 			auxVertex = auxVertex->m_pDijkstraPrevious->m_pOrigin;
 		else
@@ -166,11 +157,8 @@ CTrack SalesmanTrackBacktrackingGreedy(CGraph& graph, CVisits& visits)
 
 	// Hay que pasar por todos los que sean vertex to visit.
 	for (CVertex& v : graph.m_Vertices) {
-		v.m_VertexToVisit = false;
 		v.m_JaHePassat = false;
 	}
-	for (CVertex* v : visits.m_Vertices) v->m_VertexToVisit = true;
-	for (CEdge& e : graph.m_Edges) e.m_Used = false;
 
 	CTrack CamiMesCurt(NULL);
 	LenCamiMesCurt = numeric_limits<double>::max();
@@ -188,11 +176,12 @@ CTrack SalesmanTrackBacktrackingGreedy(CGraph& graph, CVisits& visits)
 		for (CVertex* vd : visits.m_Vertices) // Vertex Desti
 		{
 			if (vo == vd) {
-				vector_dijkstra.push_back(std::make_pair(CTrack(nullptr), 0.0));
+				vector_dijkstra.emplace_back(std::make_pair(CTrack(NULL), 0.0));
 			}
 			else {
-				CTrack caminoDijkstra = getDijkstraPrevious(&graph, vo, vd);
-				vector_dijkstra.push_back(std::pair<CTrack, double>(caminoDijkstra, vd->m_DijkstraDistance));
+				// MODIFICACION AQUI!
+				CTrack caminoDijkstra = getDijkstraPrevious(vo, vd);
+				vector_dijkstra.emplace_back(std::pair<CTrack, double>(caminoDijkstra, vd->m_DijkstraDistance));
 			}
 		}
 		matrix_dijkstra.push_back(vector_dijkstra);
@@ -212,7 +201,7 @@ CTrack SalesmanTrackBacktrackingGreedy(CGraph& graph, CVisits& visits)
 			continue;
 		CamiMesCurt.Append(matrix_dijkstra[auxOrigen][i].first);
 		auxOrigen = i;
-	}	
+	}
 
 	return CamiMesCurt;
 }
