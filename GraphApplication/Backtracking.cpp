@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "Graph.h"
-#include <set>
-#include <stack>
 
 // =============================================================================
 // SalesmanTrackBacktracking ===================================================
@@ -9,137 +7,74 @@
 
 CVertex* vDesti;
 CTrack CamiCurt(NULL);
-stack<CEdge*> pilaCamins;
 double LenCamiMesCurt;
 double LenCamiActual;
+int toVisitCounter = 0;
+int allNodes = 0;
 
 struct NodeCami {
 	CEdge* m_pEdge;
 	NodeCami* m_pAnterior;
 };
 
-bool visitedAllNodes(NodeCami* pAnterior) {
-	NodeCami* pAntAux = pAnterior; // Auxiliar per no modificar el pAnterior
-	while (pAntAux)
-	{
-		if (pAntAux->m_pEdge->m_pOrigin->m_VertexToVisit && !pAntAux->m_pEdge->m_pOrigin->m_JaHePassat) {
-			return false;
-		}
-		pAntAux = pAntAux->m_pAnterior;
-	}
-	return true;
-}
-
-void setJaHePassatCami(NodeCami* pAnterior, bool JaHePassat)
-{
-	NodeCami* pAntAux = pAnterior; // Auxiliar per no modificar el pAnterior
-	while (pAntAux != nullptr)
-	{
-		if (pAntAux->m_pEdge->m_pOrigin->m_VertexToVisit) // Anirem fins a trobar un visitat
-			break;
-		pAntAux->m_pEdge->m_pOrigin->m_JaHePassat = JaHePassat;
-		pAntAux = pAntAux->m_pAnterior;
-	}
-}
-
 void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
 {
-	if (pActual == vDesti) {
-		if (visitedAllNodes(pAnterior))
-		{
-			if (LenCamiActual < LenCamiMesCurt) {
-				CamiCurt.Clear();
-				while (pAnterior) {
-					CamiCurt.m_Edges.push_front(pAnterior->m_pEdge);
-					pAnterior = pAnterior->m_pAnterior;
-				}
-				LenCamiMesCurt = LenCamiActual;
+	if (toVisitCounter == allNodes && pActual == vDesti) {
+		if (LenCamiActual < LenCamiMesCurt) {
+			CamiCurt.Clear();
+			while (pAnterior) {
+				CamiCurt.m_Edges.push_front(pAnterior->m_pEdge);
+				pAnterior = pAnterior->m_pAnterior;
 			}
+			LenCamiMesCurt = LenCamiActual;
 		}
 	}
 	else if (LenCamiActual < LenCamiMesCurt) {
-		if (pActual->m_VertexToVisit) // Cas canvi de cami (vist->visit)
-		{
-			NodeCami* pAntAux = pAnterior;
-			setJaHePassatCami(pAntAux, false); // Posem que podem passar pels anterios
-		}
+		if (pActual->m_VertexToVisit && !pActual->m_JaHePassat)
+			toVisitCounter++;
+
+		bool stateActualAux = pActual->m_JaHePassat; // Per despres tornar a l'estat anterior.
 		pActual->m_JaHePassat = true;
 		NodeCami node;
 		node.m_pAnterior = pAnterior;
 		for (CEdge* pE : pActual->m_Edges) {
-			if (!pE->m_pDestination->m_JaHePassat) {
+			if (!pE->m_Used) {
+				pE->m_Used = true;
 				node.m_pEdge = pE;
 				LenCamiActual += pE->m_Length;
 				SalesmanTrackBacktrackingRec(&node, pE->m_pDestination);
+				// Tornem a l'estat anterior!
 				LenCamiActual -= pE->m_Length;
+				pE->m_Used = false;
 			}
 		}
-		if (pActual->m_VertexToVisit) // Cas canvi de cami (vist->visit)
-		{
-			NodeCami* pAntAux = pAnterior;
-			setJaHePassatCami(pAnterior, true); // Revertim els canvis anteriors
-		}
-		pActual->m_JaHePassat = false;
-	}
 
-
-	/*
-	if (pActual == vDesti) {
-		if (visitedAllNodes(g, visits))
-		{
-			if (LenCamiActual < LenCamiMesCurt) {
-				CamiCurt.Clear();
-				while (!pilaCamins.empty()) {
-					CamiCurt.m_Edges.push_back(pilaCamins.top());
-					pilaCamins.pop();
-				}
-				LenCamiMesCurt = LenCamiActual;
-			}
-		}	
+		// Tornem a l'estat anterior!
+		pActual->m_JaHePassat = stateActualAux; 
+		if (pActual->m_VertexToVisit && !pActual->m_JaHePassat)
+			toVisitCounter--;
 	}
-	else if (LenCamiActual < LenCamiMesCurt) {
-		// Pas endevant:
-		pActual->m_JaHePassat = true;
-		NodeCami node;
-		node.m_pAnterior = pAnterior;
-		for (CEdge* pE : pActual->m_Edges) 
-		{
-			if ((pE == pilaCamins.top() && pE->m_pDestination->m_JaHePassat)) //No revisitar un node dins d'un cami d'un node a un altre
-				continue;
-
-			// ACUERDATE DE SI SE CUMPLE LA CONDICION, PONER EN g de CGRAPH en true EL JA HE PASSAT PARA QUE FUNCIONE BIEN EL VISITEDALLNODES.
-			LenCamiActual += pE->m_Length;
-			pilaCamins.push(pE);
-			SalesmanTrackBacktrackingRec(pE->m_pDestination, &node, g, visits);
-			LenCamiActual -= pE->m_Length;
-		}
-		// Pas enrere:
-		pActual->m_JaHePassat = false;
-		if (!pilaCamins.empty())
-			pilaCamins.pop();
-		if (!pilaCamins.empty())
-			pActual = pilaCamins.top()->m_pOrigin;
-	}
-	*/
 }
 
-CTrack SalesmanTrackBacktracking(CGraph &graph, CVisits &visits)
+CTrack SalesmanTrackBacktracking(CGraph& graph, CVisits& visits)
 {
 	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2)
 		return CTrack(&graph);
 
 	// Hay que pasar por todos los que sean vertex to visit.
-	for (CVertex& v : graph.m_Vertices) v.m_VertexToVisit = false;
+	for (CVertex& v : graph.m_Vertices) {
+		v.m_VertexToVisit = false;
+		v.m_JaHePassat = false;
+	}
 	for (CVertex* v : visits.m_Vertices) v->m_VertexToVisit = true;
-	
-	
+	for (CEdge& e : graph.m_Edges) e.m_Used = false;
+
+	allNodes = visits.GetNVertices() - 1;
 	CVertex* pInici = visits.m_Vertices.front();
 	vDesti = visits.m_Vertices.back();
 	CamiCurt.Clear();
 	LenCamiMesCurt = numeric_limits<double>::max();
 	LenCamiActual = 0.0;
-
-	
 
 	SalesmanTrackBacktrackingRec(NULL, pInici);
 
@@ -152,8 +87,18 @@ CTrack SalesmanTrackBacktracking(CGraph &graph, CVisits &visits)
 // SalesmanTrackBacktrackingGreedy =============================================
 // =============================================================================
 
+void SalesmanTrackBacktrackingGreedyRec()
+{
+
+}
+
 
 CTrack SalesmanTrackBacktrackingGreedy(CGraph& graph, CVisits& visits)
 {
+	// Calcular matriu de Dijkstras entre visits.
+	dijk
+
+	// Crida recursiva
+
 	return CTrack(&graph);
 }
