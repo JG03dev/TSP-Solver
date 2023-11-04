@@ -19,14 +19,27 @@ struct NodeCami {
 };
 
 bool visitedAllNodes(NodeCami* pAnterior) {
-	while (pAnterior)
+	NodeCami* pAntAux = pAnterior; // Auxiliar per no modificar el pAnterior
+	while (pAntAux)
 	{
-		if (pAnterior->m_pEdge->m_pOrigin->m_VertexToVisit && !pAnterior->m_pEdge->m_pOrigin->m_JaHePassat) {
+		if (pAntAux->m_pEdge->m_pOrigin->m_VertexToVisit && !pAntAux->m_pEdge->m_pOrigin->m_JaHePassat) {
 			return false;
 		}
-		pAnterior = pAnterior->m_pAnterior;
+		pAntAux = pAntAux->m_pAnterior;
 	}
 	return true;
+}
+
+void setJaHePassatCami(NodeCami* pAnterior, bool JaHePassat)
+{
+	NodeCami* pAntAux = pAnterior; // Auxiliar per no modificar el pAnterior
+	while (pAntAux != nullptr)
+	{
+		if (pAntAux->m_pEdge->m_pOrigin->m_VertexToVisit) // Anirem fins a trobar un visitat
+			break;
+		pAntAux->m_pEdge->m_pOrigin->m_JaHePassat = JaHePassat;
+		pAntAux = pAntAux->m_pAnterior;
+	}
 }
 
 void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
@@ -45,16 +58,26 @@ void SalesmanTrackBacktrackingRec(NodeCami* pAnterior, CVertex* pActual)
 		}
 	}
 	else if (LenCamiActual < LenCamiMesCurt) {
+		if (pActual->m_VertexToVisit) // Cas canvi de cami (vist->visit)
+		{
+			NodeCami* pAntAux = pAnterior;
+			setJaHePassatCami(pAntAux, false); // Posem que podem passar pels anterios
+		}
 		pActual->m_JaHePassat = true;
 		NodeCami node;
 		node.m_pAnterior = pAnterior;
 		for (CEdge* pE : pActual->m_Edges) {
-			if (!pE->m_pDestination->m_JaHePassat && !pE->m_pDestination->m_VertexToVisit) {
+			if (!pE->m_pDestination->m_JaHePassat) {
 				node.m_pEdge = pE;
 				LenCamiActual += pE->m_Length;
 				SalesmanTrackBacktrackingRec(&node, pE->m_pDestination);
 				LenCamiActual -= pE->m_Length;
 			}
+		}
+		if (pActual->m_VertexToVisit) // Cas canvi de cami (vist->visit)
+		{
+			NodeCami* pAntAux = pAnterior;
+			setJaHePassatCami(pAnterior, true); // Revertim els canvis anteriors
 		}
 		pActual->m_JaHePassat = false;
 	}
