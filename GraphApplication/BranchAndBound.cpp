@@ -50,7 +50,7 @@ public:
 		m_VisitesAFer[posActual] = true;
 		m_numFets++;
 	}
-	//Inicializador general B&B2
+	//Inicializador general B&B2 i B&B3
 	CBBNodeAlumne(const CBBNodeAlumne& node, int posActual, double distanciaNueva, double cotaInferior, double cotaSuperior)
 		: m_VisitesFetes(node.m_VisitesFetes)
 		, m_VisitesAFer(node.m_VisitesAFer)
@@ -172,7 +172,7 @@ CTrack SalesmanTrackBranchAndBound1(CGraph& graph, CVisits& visits)
 
 struct comparator2 {
 	bool operator()(const CBBNodeAlumne* s1, const CBBNodeAlumne* s2) {
-		return s1->m_cotaInferior + s1->m_Length > s2->m_cotaInferior + s2->m_Length;
+		return s1->m_cotaInferior > s2->m_cotaInferior;
 	}
 };
 
@@ -249,7 +249,6 @@ CTrack SalesmanTrackBranchAndBound2(CGraph& graph, CVisits &visits)
 				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, w,
 					cotaInferior, cotaSuperior);
 
-
 				maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 				if (pSNew->m_cotaSuperior < cotaSupMin) cotaSupMin = pSNew->m_cotaSuperior;
 				queue.push(pSNew);
@@ -292,7 +291,7 @@ CTrack SalesmanTrackBranchAndBound2(CGraph& graph, CVisits &visits)
 
 struct comparator3 {
 	bool operator()(const CBBNodeAlumne* s1, const CBBNodeAlumne* s2) {
-		return s1->m_cotaInferior + s1->m_Length > s2->m_cotaInferior + s2->m_Length;
+		return s1->m_cotaInferior > s2->m_cotaInferior;
 	}
 };
 
@@ -328,7 +327,7 @@ CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 	}
 
 	// CODIGO B&B3
-	priority_queue<CBBNodeAlumne*, std::vector<CBBNodeAlumne*>, comparator2> queue;
+	priority_queue<CBBNodeAlumne*, std::vector<CBBNodeAlumne*>, comparator3> queue;
 
 	// Inicialization of the first node.
 	CBBNodeAlumne* first = new CBBNodeAlumne(visits.GetNVertices(), 0);
@@ -362,8 +361,8 @@ CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 			double w = pS->m_Length + distReal; //Distancia g (no hay heuristica)
 
 			//Nota: m'he donat compte que en aquest cas l'heuristica es que no hi han heuristiques XD
-			double cotaInferior = w
-				, cotaSuperior = cotaInferior + PRECISION; //Teoricament son iguals, a la practica sumem la precisio al superior
+			double cotaInferior = w - vector_minmax[pS->m_sizeVisits - 1].first
+				, cotaSuperior = cotaInferior - vector_minmax[pS->m_sizeVisits - 1].second + PRECISION; //Teoricament son iguals, a la practica sumem la precisio al superior
 
 			if (w < maxLength && cotaInferior <= cotaSupMin) {
 				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, w,
@@ -413,7 +412,8 @@ CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 					cotaSuperior += vector_minmax[i].second;
 				}
 				//Sumar distancia real acumulada dels visitats (i precisio)
-				cotaInferior += w; cotaSuperior += w + PRECISION;
+				cotaInferior += w - vector_minmax[i].first;
+				cotaSuperior += w - vector_minmax[i].second + PRECISION;
 
 				if (w < maxLength && cotaInferior <= cotaSupMin) {
 
