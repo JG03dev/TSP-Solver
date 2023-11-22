@@ -15,6 +15,7 @@ public:
 	std::vector<int> m_VisitesFetes;
 	std::vector<bool> m_VisitesAFer;
 	size_t m_sizeVisits;
+	int m_numFets;
 
 	//B&B1
 	double m_Length;
@@ -26,35 +27,42 @@ public:
 	//Inicializador inicial
 	CBBNodeAlumne(size_t sizeVisits, int posActual, int cotaInferior=0, int cotaSuperior=0)
 		: m_VisitesAFer(sizeVisits, false)
+		, m_VisitesFetes(sizeVisits, -1)
+		, m_numFets(0)
 		, m_sizeVisits(sizeVisits)
 		, m_Length(0)
 		, m_cotaInferior(cotaInferior)
 		, m_cotaSuperior(cotaSuperior)
 	{
-		m_VisitesFetes.emplace_back(posActual);
+		m_VisitesFetes[m_numFets] = posActual;
 		m_VisitesAFer[posActual] = true;
+		m_numFets++;
 	}
 	//Inicializador general B&B1
 	CBBNodeAlumne(const CBBNodeAlumne& node, int posActual, double distanciaNueva)
 		: m_VisitesFetes(node.m_VisitesFetes)
 		, m_VisitesAFer(node.m_VisitesAFer)
+		, m_numFets(node.m_numFets)
 		, m_sizeVisits(node.m_sizeVisits)
-		, m_Length(node.m_Length)
+		, m_Length(distanciaNueva)
 	{
-		m_VisitesFetes.emplace_back(posActual);
+		m_VisitesFetes[m_numFets] = posActual;
 		m_VisitesAFer[posActual] = true;
-		m_Length += distanciaNueva;
+		m_numFets++;
 	}
 	//Inicializador general B&B2
 	CBBNodeAlumne(const CBBNodeAlumne& node, int posActual, double distanciaNueva, double cotaInferior, double cotaSuperior)
 		: m_VisitesFetes(node.m_VisitesFetes)
 		, m_VisitesAFer(node.m_VisitesAFer)
+		, m_numFets(node.m_numFets)
 		, m_sizeVisits(node.m_sizeVisits)
 		, m_cotaInferior(cotaInferior)
 		, m_cotaSuperior(cotaSuperior)
+		, m_Length(distanciaNueva)
 	{
-		m_VisitesFetes.emplace_back(posActual);
+		m_VisitesFetes[m_numFets] = posActual;
 		m_VisitesAFer[posActual] = true;
+		m_numFets++;
 	}
 };
 
@@ -115,20 +123,20 @@ CTrack SalesmanTrackBranchAndBound1(CGraph& graph, CVisits& visits)
 		CBBNodeAlumne* pS = queue.top();
 		queue.pop();
 
-		int pV = pS->m_VisitesFetes.back(); // Ultim node del cami.
-		if (pS->m_VisitesFetes.size() == visits.GetNVertices()) { // Desti arribat!
+		int pV = pS->m_VisitesFetes[pS->m_numFets - 1]; // Ultim node del cami.
+		if (pS->m_VisitesFetes.back() != -1) { // Desti arribat!
 			// Solucion encontrada
 			optimum = pS->m_VisitesFetes;
 			delete pS;
 			break;
 		}
-		else if (pS->m_VisitesFetes.size() == visits.GetNVertices() - 1) // Cuando visitados todos.
+		else if (pS->m_VisitesFetes[visits.GetNVertices() - 2] != - 1) // Cuando visitados todos.
 		{
-			double w = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second; //Distancia g (no hay heuristica)
+			double realDist = matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
+			double w = pS->m_Length + realDist; //Distancia g (no hay heuristica)
 
 			if (w < maxLength) {
-				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, matrix_dijkstra[pV][pS->m_sizeVisits - 1].second);
-				pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
+				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, w);
 
 				maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 				queue.push(pSNew);
@@ -137,14 +145,13 @@ CTrack SalesmanTrackBranchAndBound1(CGraph& graph, CVisits& visits)
 		else {
 			for (int i = 0; i < pS->m_sizeVisits - 1; i++) {
 				if (pS->m_VisitesAFer[i])  continue; //Recorrem nomes els que no hem visitat
-
-				double w = pS->m_Length + matrix_dijkstra[pV][i].second; //Distancia g (no hay heuristica)
+				
+				double realDist = matrix_dijkstra[pV][i].second;
+				double w = pS->m_Length + realDist; //Distancia g (no hay heuristica)
 
 				if (w < maxLength) {
-					CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, matrix_dijkstra[pV][i].second);
-					pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][i].second;
-
-					if (pSNew->m_VisitesFetes.size() == pSNew->m_sizeVisits) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
+					CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, w);
+					if (pSNew->m_VisitesFetes.back() != -1) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 					queue.push(pSNew);
 				}
 			}
@@ -171,7 +178,7 @@ struct comparator2 {
 
 CTrack SalesmanTrackBranchAndBound2(CGraph& graph, CVisits &visits)
 {
-	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2 || graph.m_Vertices.size() >= 100)
+	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2)
 		return CTrack(&graph);
 
 	std::vector<std::vector<std::pair<CTrack, double>>> matrix_dijkstra;
@@ -219,59 +226,56 @@ CTrack SalesmanTrackBranchAndBound2(CGraph& graph, CVisits &visits)
 
 	std::vector<int> optimum;
 	while (!queue.empty()) {
+		if (queue.size() % 1000 == 0) printf("%d", queue.size());
 		CBBNodeAlumne* pS = queue.top();
 		queue.pop();
 
-		int pV = pS->m_VisitesFetes.back();
-		if (pS->m_VisitesFetes.size() == visits.GetNVertices()) { // Desti arribat!
+		int pV = pS->m_VisitesFetes[pS->m_numFets - 1];
+		if (pS->m_VisitesFetes.back() != -1) { // Desti arribat!
 			// Solucion encontrada
 			optimum = pS->m_VisitesFetes;
 			delete pS;
 			break;
 		}
-		else if (pS->m_VisitesFetes.size() == visits.GetNVertices() - 1) // Cuando visitados todos.
+		else if (pS->m_VisitesFetes[visits.GetNVertices() - 2] != -1) // Cuando visitados todos.
 		{
-			double w = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second; //Distancia g (no hay heuristica)
-			CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, matrix_dijkstra[pV][pS->m_sizeVisits - 1].second,
-				pS->m_cotaInferior, pS->m_cotaSuperior);
+			double distReal = matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
+			double w = pS->m_Length + distReal; //Distancia g (no hay heuristica)
+			
 			//calcular cotes
-			pSNew->m_cotaInferior += matrix_dijkstra[pSNew->m_VisitesFetes[pSNew->m_VisitesFetes.size() - 2]][pSNew->m_VisitesFetes.back()].second - vector_minmax[pSNew->m_VisitesFetes.back()].first;
-			pSNew->m_cotaSuperior += matrix_dijkstra[pSNew->m_VisitesFetes[pSNew->m_VisitesFetes.size() - 2]][pSNew->m_VisitesFetes.back()].second - vector_minmax[pSNew->m_VisitesFetes.back()].second + PRECISION;
+			double cotaInferior = pS->m_cotaInferior + distReal - vector_minmax[pS->m_sizeVisits - 1].first;
+			double cotaSuperior = pS->m_cotaSuperior + distReal - vector_minmax[pS->m_sizeVisits - 1].second + PRECISION;
 
+			if (w < maxLength && cotaInferior <= cotaSupMin) {
+				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, pS->m_Length + distReal,
+					cotaInferior, cotaSuperior);
 
-			if (w < maxLength && pSNew->m_cotaInferior <= cotaSupMin) {
-				
-				pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
 
 				maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 				if (pSNew->m_cotaSuperior < cotaSupMin) cotaSupMin = pSNew->m_cotaSuperior;
 				queue.push(pSNew);
 			}
-			else
-				delete pSNew;
 		}
 		else {
 			for (int i = 0; i < pS->m_sizeVisits - 1; i++) {
 				if (pS->m_VisitesAFer[i])  continue; //Recorrem nomes els que no hem visitat
 
-				double w = pS->m_Length + matrix_dijkstra[pV][i].second; //Distancia g (no hay heuristica)
+				double distReal = matrix_dijkstra[pV][i].second;
+				double w = pS->m_Length + distReal; //Distancia g (no hay heuristica)
 
-				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, matrix_dijkstra[pV][i].second,
-					pS->m_cotaInferior, pS->m_cotaSuperior);
-				//Calcular Cotes
-				pSNew->m_cotaInferior += matrix_dijkstra[pSNew->m_VisitesFetes[pSNew->m_VisitesFetes.size() - 2]][pSNew->m_VisitesFetes.back()].second - vector_minmax[pSNew->m_VisitesFetes.back()].first;
-				pSNew->m_cotaSuperior += matrix_dijkstra[pSNew->m_VisitesFetes[pSNew->m_VisitesFetes.size() - 2]][pSNew->m_VisitesFetes.back()].second - vector_minmax[pSNew->m_VisitesFetes.back()].second + PRECISION;
+				//calcular cotes
+				double cotaInferior = pS->m_cotaInferior + distReal - vector_minmax[i].first;
+				double cotaSuperior = pS->m_cotaSuperior + distReal - vector_minmax[i].second + PRECISION;
 
-				if (w < maxLength && pSNew->m_cotaInferior <= cotaSupMin) {
+				if (w < maxLength && cotaInferior <= cotaSupMin) {
 
-					pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][i].second;
+					CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, pS->m_Length + distReal,
+						cotaInferior, cotaSuperior);
 
-					if (pSNew->m_VisitesFetes.size() == pSNew->m_sizeVisits) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
+					if (pSNew->m_VisitesFetes.back() != -1) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 					if (pSNew->m_cotaSuperior < cotaSupMin) cotaSupMin = pSNew->m_cotaSuperior;
 					queue.push(pSNew);
 				}
-				else
-					delete pSNew;
 			}
 		}
 		delete pS;
@@ -287,6 +291,7 @@ CTrack SalesmanTrackBranchAndBound2(CGraph& graph, CVisits &visits)
 
 // SalesmanTrackBranchAndBound3 ===================================================
 
+//TODO: delete this
 std::vector<std::pair<double, double>> calcularCotes(std::vector<std::vector<std::pair<CTrack, double>>> matrix_dijkstra, std::vector<std::pair<double, double>> vmm, CBBNodeAlumne* n)
 {
 	//Cas cami buit
@@ -304,11 +309,11 @@ std::vector<std::pair<double, double>> calcularCotes(std::vector<std::vector<std
 		for (int i = 0; i < n->m_sizeVisits; i++) // Vertex Origen
 		{
 			if (n->m_VisitesAFer[i] && i != n->m_VisitesFetes.back()) continue; // Si esta visitat.
-			
+
 			for (int j = 0; j < n->m_sizeVisits; j++) // Vertex Desti
 			{
-				if (i == j || !n->m_VisitesAFer[j] || 
-					(i == n->m_VisitesFetes.back() && j == n->m_sizeVisits - 1 && n->m_VisitesFetes.size() < n->m_sizeVisits - 1)) 
+				if (i == j || !n->m_VisitesAFer[j] ||
+					(i == n->m_VisitesFetes.back() && j == n->m_sizeVisits - 1 && n->m_VisitesFetes.size() < n->m_sizeVisits - 1))
 					continue;
 
 				double dis = matrix_dijkstra[i][j].second;
@@ -334,7 +339,7 @@ struct comparator3 {
 
 CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 {
-	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2 || graph.m_Vertices.size() >= 100)
+	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2)
 		return CTrack(&graph);
 
 	std::vector<std::vector<std::pair<CTrack, double>>> matrix_dijkstra;
@@ -363,14 +368,13 @@ CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 		matrix_dijkstra.push_back(vector_dijkstra);
 	}
 
-	// CODIGO B&B3
+	// CODIGO B&B2
 	priority_queue<CBBNodeAlumne*, std::vector<CBBNodeAlumne*>, comparator2> queue;
 
 	// Inicialization of the first node.
 	CBBNodeAlumne* first = new CBBNodeAlumne(visits.GetNVertices(), 0);
-	
-	// Calcul cota inferior/superior
-	// Per cada node restant
+	//Calcul cota inferior/superior
+	//Per cada node restant
 	for (int i = 1; i < first->m_sizeVisits; i++)
 	{
 		first->m_cotaInferior += vector_minmax[i].first;
@@ -383,57 +387,61 @@ CTrack SalesmanTrackBranchAndBound3(CGraph& graph, CVisits &visits)
 
 	std::vector<int> optimum;
 	while (!queue.empty()) {
+		if (queue.size() % 1000 == 0) printf("%d", queue.size());
 		CBBNodeAlumne* pS = queue.top();
 		queue.pop();
 
-		int pV = pS->m_VisitesFetes.back();
-		if (pS->m_VisitesFetes.size() == visits.GetNVertices()) { // Desti arribat!
+		int pV = pS->m_VisitesFetes[pS->m_numFets - 1];
+		if (pS->m_VisitesFetes.back() != -1) { // Desti arribat!
 			// Solucion encontrada
 			optimum = pS->m_VisitesFetes;
 			delete pS;
 			break;
 		}
-		else if (pS->m_VisitesFetes.size() == visits.GetNVertices() - 1) // Cuando visitados todos.
+		else if (pS->m_VisitesFetes[visits.GetNVertices() - 2] != -1) // Cuando visitados todos.
 		{
-			double w = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second; //Distancia g (no hay heuristica)
-			CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, matrix_dijkstra[pV][pS->m_sizeVisits - 1].second,
-				pS->m_cotaInferior, pS->m_cotaSuperior);
+			double distReal = matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
+			double w = pS->m_Length + distReal; //Distancia g (no hay heuristica)
+
+			//Re-calcular minims maxims
+
+
 			//calcular cotes
-			vector_minmax = calcularCotes(matrix_dijkstra, std::vector<std::pair<double, double>>(visits.m_Vertices.size(), init), pSNew);
+			double cotaInferior = pS->m_cotaInferior + distReal - vector_minmax[pS->m_sizeVisits - 1].first;
+			double cotaSuperior = pS->m_cotaSuperior + distReal - vector_minmax[pS->m_sizeVisits - 1].second + PRECISION;
 
-			
-			if (w < maxLength && pSNew->m_cotaInferior <= cotaSupMin) {
+			if (w < maxLength && cotaInferior <= cotaSupMin) {
+				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, pS->m_sizeVisits - 1, pS->m_Length + distReal,
+					cotaInferior, cotaSuperior);
 
-				pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][pS->m_sizeVisits - 1].second;
 
 				maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 				if (pSNew->m_cotaSuperior < cotaSupMin) cotaSupMin = pSNew->m_cotaSuperior;
 				queue.push(pSNew);
 			}
-			else
-				delete pSNew;
 		}
 		else {
 			for (int i = 0; i < pS->m_sizeVisits - 1; i++) {
 				if (pS->m_VisitesAFer[i])  continue; //Recorrem nomes els que no hem visitat
 
-				double w = pS->m_Length + matrix_dijkstra[pV][i].second; //Distancia g (no hay heuristica)
+				double distReal = matrix_dijkstra[pV][i].second;
+				double w = pS->m_Length + distReal; //Distancia g (no hay heuristica)
+				// Recalcular minims maxims
 
-				CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, matrix_dijkstra[pV][i].second,
-					pS->m_cotaInferior, pS->m_cotaSuperior);
-				//Calcular Cotes				
-				vector_minmax = calcularCotes(matrix_dijkstra, std::vector<std::pair<double, double>>(visits.m_Vertices.size(), init), pSNew);
 
-				if (w < maxLength && pSNew->m_cotaInferior <= cotaSupMin) {
+				//calcular cotes
+				double cotaInferior = pS->m_cotaInferior + distReal - vector_minmax[i].first;
+				double cotaSuperior = pS->m_cotaSuperior + distReal - vector_minmax[i].second + PRECISION;
 
-					pSNew->m_Length = pS->m_Length + matrix_dijkstra[pV][i].second;
+				if (w < maxLength && cotaInferior <= cotaSupMin) {
 
-					if (pSNew->m_VisitesFetes.size() == pSNew->m_sizeVisits) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
+					CBBNodeAlumne* pSNew = new CBBNodeAlumne(*pS, i, pS->m_Length + distReal,
+						cotaInferior, cotaSuperior);
+
+					if (pSNew->m_VisitesFetes.back() != -1) maxLength = w; //Solucio parcial, actualitzem maxLength per podar
 					if (pSNew->m_cotaSuperior < cotaSupMin) cotaSupMin = pSNew->m_cotaSuperior;
 					queue.push(pSNew);
 				}
-				else
-					delete pSNew;
 			}
 		}
 		delete pS;
