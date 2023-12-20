@@ -92,9 +92,8 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 					+ matrix_dijkstra[jVisites - 1][iVisites].second + matrix_dijkstra[iVisites][jVisites + 1].second;
 			}
 			else {
-				// mirar formula foto
-				LongCamiActual = LongCamiActual - matrix_dijkstra[iVisites - 1][iVisites].second - matrix_dijkstra[jVisites][jVisites + 1].second +
-					matrix_dijkstra[iVisites - 1][jVisites].second + matrix_dijkstra[iVisites][jVisites + 1].second;
+				LongCamiActual = LongCamiActual - matrix_dijkstra[jVisites - 2][jVisites - 1].second - matrix_dijkstra[jVisites][jVisites - 1].second 
+					+ matrix_dijkstra[jVisites - 2][jVisites].second + matrix_dijkstra[jVisites - 1][jVisites + 1].second;
 			}
 
 			if (LongCamiActual < LongCamiMesCurt) {
