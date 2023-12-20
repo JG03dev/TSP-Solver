@@ -49,8 +49,6 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		matrix_dijkstra.push_back(vector_dijkstra);
 	}
 
-
-
 	// CHANGE FROM HERE DOWN BELOW!
 
 	std::vector<int> indexVisites(visits.GetNVertices());
@@ -86,18 +84,19 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 
 			double cami_aux = LongCamiActual;
 
-			if (iVisites != jVisites - 1 && iVisites != jVisites + 1) {
+			if (iVisites != jVisites - 1 && iVisites != jVisites + 1) { // Nodes NOT next to each other.
 				LongCamiActual = LongCamiActual - matrix_dijkstra[iVisites - 1][iVisites].second - matrix_dijkstra[iVisites][iVisites + 1].second -
 					matrix_dijkstra[jVisites - 1][jVisites].second - matrix_dijkstra[jVisites][jVisites + 1].second + matrix_dijkstra[iVisites - 1][jVisites].second + matrix_dijkstra[j][iVisites + 1].second
 					+ matrix_dijkstra[jVisites - 1][iVisites].second + matrix_dijkstra[iVisites][jVisites + 1].second;
 			}
-			else {
+			else { // Next to each other.
 				LongCamiActual = LongCamiActual - matrix_dijkstra[jVisites - 2][jVisites - 1].second - matrix_dijkstra[jVisites][jVisites - 1].second 
 					+ matrix_dijkstra[jVisites - 2][jVisites].second + matrix_dijkstra[jVisites - 1][jVisites + 1].second;
 			}
 
 			if (LongCamiActual < LongCamiMesCurt) {
 				LongCamiMesCurt = LongCamiActual;
+				std::swap(indexVisites[i], indexVisites[j]);
 			}
 			else {
 				// Si no hem aconseguit un camí més curt, tornem a l'estat anterior
@@ -105,6 +104,21 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 			}
 		}
 	}
+
+	list<int> indexCamiMesCurt;
+
+	//Fem el track a partir dels index
+	int auxOrigen = 0;
+	for (int i : indexCamiMesCurt)
+	{
+		if (i == 0)
+			continue;
+		CamiMesCurt.Append(matrix_dijkstra[auxOrigen][i].first);
+		auxOrigen = i;
+	}
+
+	return CamiMesCurt;
+
 
 	return CTrack(&graph);
 }
