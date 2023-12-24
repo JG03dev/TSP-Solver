@@ -24,6 +24,7 @@ CTrack getDijkstraPrevio(CVertex* vo, CVertex* vd)
 
 CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 {
+
 	if (graph.m_Vertices.size() < 2 || visits.m_Vertices.size() < 2)
 		return CTrack(&graph);
 	CVertex* pInici = visits.m_Vertices.front();
@@ -53,17 +54,22 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		indexVisites[i] = i;
 	}
 
-	int total_tries = visits.GetNVertices()*10000;
+	int total_tries = visits.GetNVertices() * 10'000;
 	vector<int> CamiDefinitiu(visits.GetNVertices());
 	double LongCamiMesCurt = numeric_limits<double>::max();
 
+
+
 	for (int tries = 0; tries < total_tries; ++tries) {
+
+		// Initialize random engine outside the loop
+		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+		std::mt19937 g(seed);
 
 		// ------------------------- Inicialitzacio aleatoria -------------------------
 		int origen = 0, desti = indexVisites.back();
 		// Shuffle the elements in between
-		std::srand(std::time(0));
-		std::random_shuffle(indexVisites.begin() + 1, indexVisites.end() - 1);
+		std::shuffle(indexVisites.begin() + 1, indexVisites.end() - 1, g);
 		// --------------------------------------------------------------------------- 
 
 		double LongCamiActual = 0.0;
