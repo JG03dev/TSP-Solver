@@ -47,20 +47,17 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		matrix_dijkstra.push_back(vector_dijkstra);
 	}
 
-	int total_tries = visits.GetNVertices()*100000;
-	vector<int> CamiDefinitiu;
-	double distanciaDefinitiva = numeric_limits<double>::max();
+	std::vector<int> indexVisites(visits.GetNVertices());
 
-	for (int tries = 0; tries < total_tries; tries++) {
+	for (int i = 0; i < visits.GetNVertices(); ++i) {
+		indexVisites[i] = i;
+	}
 
-		std::vector<int> indexVisites(visits.GetNVertices(), 0);
+	int total_tries = visits.GetNVertices()*10000;
+	vector<int> CamiDefinitiu(visits.GetNVertices());
+	double LongCamiMesCurt = numeric_limits<double>::max();
 
-		for (int i = 0; i < visits.GetNVertices(); ++i) {
-			indexVisites[i] = i;
-		}
-
-		double LongCamiActual = 0.0;
-		double LongCamiMesCurt = (double)numeric_limits<float>::max();
+	for (int tries = 0; tries < total_tries; ++tries) {
 
 		// ------------------------- Inicialitzacio aleatoria -------------------------
 		int origen = 0, desti = indexVisites.back();
@@ -69,46 +66,40 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		std::random_shuffle(indexVisites.begin() + 1, indexVisites.end() - 1);
 		// --------------------------------------------------------------------------- 
 
-		for (int i = 1; i < indexVisites.size(); i++) {
-			LongCamiActual += matrix_dijkstra[indexVisites[i]][indexVisites[i - 1]].second;
+		double LongCamiActual = 0.0;
+		for (int iV = 0; iV < indexVisites.size() - 1; ++iV) {
+			LongCamiActual += matrix_dijkstra[indexVisites[iV]][indexVisites[iV + 1]].second;
 		}
+
+		if (LongCamiActual < LongCamiMesCurt) {
+			LongCamiMesCurt = LongCamiActual;
+			CamiDefinitiu = indexVisites;
+		}
+
+		vector<int> camiAux = indexVisites;
 
 		for (int i = 1; i < visits.GetNVertices() - 2; ++i) {
 			for (int j = i + 1; j < visits.GetNVertices() - 1; ++j) {
 
-				double cami_aux = LongCamiActual;
+				LongCamiActual = 0.0;
 
-				if (indexVisites[i] != indexVisites[j] - 1 && indexVisites[i] != indexVisites[j] + 1) { // Nodes NOT next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[i] - 1][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i] + 1].second -
-						matrix_dijkstra[indexVisites[j] - 1][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] + 1].second + matrix_dijkstra[indexVisites[i] - 1][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i] + 1].second
-						+ matrix_dijkstra[indexVisites[j] - 1][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j] + 1].second;
-				}
-				else { // Next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[j] - 2][indexVisites[j] - 1].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] - 1].second
-						+ matrix_dijkstra[indexVisites[j] - 2][indexVisites[j]].second + matrix_dijkstra[indexVisites[j] - 1][indexVisites[j] + 1].second;
+				indexVisites = camiAux; // Tornar al indexVisits original del intent N.
+
+				std::swap(indexVisites[i], indexVisites[j]); // Fem SWAP
+
+				for (int iV = 0; iV < indexVisites.size() - 1; ++iV) {
+					LongCamiActual += matrix_dijkstra[indexVisites[iV]][indexVisites[iV + 1]].second;
 				}
 
 				if (LongCamiActual < LongCamiMesCurt) {
 					LongCamiMesCurt = LongCamiActual;
-					std::swap(indexVisites[i], indexVisites[j]);
-				}
-				else {
-					// Si no hem aconseguit un camí més curt, tornem a l'estat anterior
-					LongCamiActual = cami_aux;
+					CamiDefinitiu = indexVisites;
 				}
 			}
 		}
-
-		// Si de todos los intentos es el mas corto
-		if (LongCamiMesCurt < distanciaDefinitiva) {
-			CamiDefinitiu = indexVisites;
-			distanciaDefinitiva = LongCamiMesCurt;
-		}
 	}
-	
-	CTrack shortestTrack(&graph);
 
-	//Fem el track a partir dels index
+	CTrack shortestTrack(&graph);
 	int auxOrigen = 0;
 	for (int i : CamiDefinitiu)
 	{
