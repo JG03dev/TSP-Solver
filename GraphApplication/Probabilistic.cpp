@@ -47,13 +47,13 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		matrix_dijkstra.push_back(vector_dijkstra);
 	}
 
-	int total_tries = visits.GetNVertices();
-	vector<int> CamiDefinitiu(visits.GetNVertices());
+	int total_tries = visits.GetNVertices()*100000;
+	vector<int> CamiDefinitiu;
 	double distanciaDefinitiva = numeric_limits<double>::max();
 
 	for (int tries = 0; tries < total_tries; tries++) {
 
-		std::vector<int> indexVisites(visits.GetNVertices());
+		std::vector<int> indexVisites(visits.GetNVertices(), 0);
 
 		for (int i = 0; i < visits.GetNVertices(); ++i) {
 			indexVisites[i] = i;
@@ -65,38 +65,27 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		// ------------------------- Inicialitzacio aleatoria -------------------------
 		int origen = 0, desti = indexVisites.back();
 		// Shuffle the elements in between
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::vector<int> middleElements(indexVisites.begin() + 1, indexVisites.end() - 1);
-		std::shuffle(middleElements.begin(), middleElements.end(), gen);
-
-		// Reconstruct the shuffled array
-		indexVisites.clear();
-		indexVisites.push_back(origen);
-		indexVisites.insert(indexVisites.end(), middleElements.begin(), middleElements.end());
-		indexVisites.push_back(desti);
+		std::srand(std::time(0));
+		std::random_shuffle(indexVisites.begin() + 1, indexVisites.end() - 1);
 		// --------------------------------------------------------------------------- 
 
 		for (int i = 1; i < indexVisites.size(); i++) {
-			LongCamiActual += matrix_dijkstra[i][i - 1].second;
+			LongCamiActual += matrix_dijkstra[indexVisites[i]][indexVisites[i - 1]].second;
 		}
 
 		for (int i = 1; i < visits.GetNVertices() - 2; ++i) {
 			for (int j = i + 1; j < visits.GetNVertices() - 1; ++j) {
-				if (i == j) continue;
-
-				int iVisites = indexVisites[i], jVisites = indexVisites[j];
 
 				double cami_aux = LongCamiActual;
 
-				if (iVisites != jVisites - 1 && iVisites != jVisites + 1) { // Nodes NOT next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[iVisites - 1][iVisites].second - matrix_dijkstra[iVisites][iVisites + 1].second -
-						matrix_dijkstra[jVisites - 1][jVisites].second - matrix_dijkstra[jVisites][jVisites + 1].second + matrix_dijkstra[iVisites - 1][jVisites].second + matrix_dijkstra[j][iVisites + 1].second
-						+ matrix_dijkstra[jVisites - 1][iVisites].second + matrix_dijkstra[iVisites][jVisites + 1].second;
+				if (indexVisites[i] != indexVisites[j] - 1 && indexVisites[i] != indexVisites[j] + 1) { // Nodes NOT next to each other.
+					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[i] - 1][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i] + 1].second -
+						matrix_dijkstra[indexVisites[j] - 1][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] + 1].second + matrix_dijkstra[indexVisites[i] - 1][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i] + 1].second
+						+ matrix_dijkstra[indexVisites[j] - 1][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j] + 1].second;
 				}
 				else { // Next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[jVisites - 2][jVisites - 1].second - matrix_dijkstra[jVisites][jVisites - 1].second
-						+ matrix_dijkstra[jVisites - 2][jVisites].second + matrix_dijkstra[jVisites - 1][jVisites + 1].second;
+					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[j] - 2][indexVisites[j] - 1].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] - 1].second
+						+ matrix_dijkstra[indexVisites[j] - 2][indexVisites[j]].second + matrix_dijkstra[indexVisites[j] - 1][indexVisites[j] + 1].second;
 				}
 
 				if (LongCamiActual < LongCamiMesCurt) {
