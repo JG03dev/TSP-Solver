@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip> 
 #include <random>
+#include <algorithm>
 #include <chrono>
 
 // SalesmanTrackProbabilistic ==================================================
@@ -47,46 +48,56 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		matrix_dijkstra.push_back(vector_dijkstra);
 	}
 
-	int total_tries = visits.GetNVertices()*100000;
-	vector<int> CamiDefinitiu;
-	double distanciaDefinitiva = numeric_limits<double>::max();
+	// Vector inicial que inicialitzara els vectors d'indexos
+	std::vector<int> indexInicial(visits.GetNVertices(), 0);
+
+	for (int i = 0; i < visits.GetNVertices(); ++i) {
+		indexInicial[i] = i;
+	}
+
+	// Randomitzador
+	std::random_device rd;
+
+	// Total d'intents (proporcional al numero de visites)
+	int total_tries = visits.GetNVertices()*500000;
+
+	// Cami i distancia final de tots els intents, inicialitzats en ordre de les visites
+	vector<int> CamiDefinitiu = indexInicial;
+
+	double distanciaDefinitiva = 0.0;
+	for (int i = 1; i < CamiDefinitiu.size(); i++) {
+		distanciaDefinitiva += matrix_dijkstra[CamiDefinitiu[i]][CamiDefinitiu[i - 1]].second;
+	}
 
 	for (int tries = 0; tries < total_tries; tries++) {
 
-		std::vector<int> indexVisites(visits.GetNVertices(), 0);
-
-		for (int i = 0; i < visits.GetNVertices(); ++i) {
-			indexVisites[i] = i;
-		}
-
-		double LongCamiActual = 0.0;
-		double LongCamiMesCurt = (double)numeric_limits<float>::max();
+		std::vector<int> indexVisites = indexInicial;
 
 		// ------------------------- Inicialitzacio aleatoria -------------------------
 		int origen = 0, desti = indexVisites.back();
 		// Shuffle the elements in between
-		std::srand(std::time(0));
+		std::srand(rd());
 		std::random_shuffle(indexVisites.begin() + 1, indexVisites.end() - 1);
 		// --------------------------------------------------------------------------- 
+
+		double LongCamiActual = 0.0;
 
 		for (int i = 1; i < indexVisites.size(); i++) {
 			LongCamiActual += matrix_dijkstra[indexVisites[i]][indexVisites[i - 1]].second;
 		}
+
+		double LongCamiMesCurt = LongCamiActual;
 
 		for (int i = 1; i < visits.GetNVertices() - 2; ++i) {
 			for (int j = i + 1; j < visits.GetNVertices() - 1; ++j) {
 
 				double cami_aux = LongCamiActual;
 
-				if (indexVisites[i] != indexVisites[j] - 1 && indexVisites[i] != indexVisites[j] + 1) { // Nodes NOT next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[i] - 1][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i] + 1].second -
-						matrix_dijkstra[indexVisites[j] - 1][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] + 1].second + matrix_dijkstra[indexVisites[i] - 1][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i] + 1].second
-						+ matrix_dijkstra[indexVisites[j] - 1][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j] + 1].second;
-				}
-				else { // Next to each other.
-					LongCamiActual = LongCamiActual - matrix_dijkstra[indexVisites[j] - 2][indexVisites[j] - 1].second - matrix_dijkstra[indexVisites[j]][indexVisites[j] - 1].second
-						+ matrix_dijkstra[indexVisites[j] - 2][indexVisites[j]].second + matrix_dijkstra[indexVisites[j] - 1][indexVisites[j] + 1].second;
-				}
+				LongCamiActual = LongCamiActual 
+					- matrix_dijkstra[indexVisites[i - 1]][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i + 1]].second
+					- matrix_dijkstra[indexVisites[j - 1]][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j + 1]].second;
+					+ matrix_dijkstra[indexVisites[i] - 1][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i + 1]].second
+					+ matrix_dijkstra[indexVisites[j - 1]][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j + 1]].second;
 
 				if (LongCamiActual < LongCamiMesCurt) {
 					LongCamiMesCurt = LongCamiActual;
