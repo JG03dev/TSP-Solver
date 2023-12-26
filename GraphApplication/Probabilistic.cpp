@@ -59,14 +59,14 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 	std::random_device rd;
 
 	// Total d'intents (proporcional al numero de visites)
-	int total_tries = visits.GetNVertices()*500000;
+	int total_tries = visits.GetNVertices() * visits.GetNVertices() * 10'000;
 
 	// Cami i distancia final de tots els intents, inicialitzats en ordre de les visites
 	vector<int> CamiDefinitiu = indexInicial;
 
 	double distanciaDefinitiva = 0.0;
 	for (int i = 1; i < CamiDefinitiu.size(); i++) {
-		distanciaDefinitiva += matrix_dijkstra[CamiDefinitiu[i]][CamiDefinitiu[i - 1]].second;
+		distanciaDefinitiva += matrix_dijkstra[CamiDefinitiu[i-1]][CamiDefinitiu[i]].second;
 	}
 
 	for (int tries = 0; tries < total_tries; tries++) {
@@ -83,7 +83,7 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 		double LongCamiActual = 0.0;
 
 		for (int i = 1; i < indexVisites.size(); i++) {
-			LongCamiActual += matrix_dijkstra[indexVisites[i]][indexVisites[i - 1]].second;
+			LongCamiActual += matrix_dijkstra[indexVisites[i-1]][indexVisites[i]].second;
 		}
 
 		double LongCamiMesCurt = LongCamiActual;
@@ -93,12 +93,21 @@ CTrack SalesmanTrackProbabilistic(CGraph& graph, CVisits& visits)
 
 				double cami_aux = LongCamiActual;
 
-				LongCamiActual = LongCamiActual 
-					- matrix_dijkstra[indexVisites[i - 1]][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i + 1]].second
-					- matrix_dijkstra[indexVisites[j - 1]][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j + 1]].second;
-					+ matrix_dijkstra[indexVisites[i] - 1][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i + 1]].second
-					+ matrix_dijkstra[indexVisites[j - 1]][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j + 1]].second;
-
+				if (j != i + 1)
+				{
+					LongCamiActual = LongCamiActual
+						- matrix_dijkstra[indexVisites[i - 1]][indexVisites[i]].second - matrix_dijkstra[indexVisites[i]][indexVisites[i + 1]].second
+						- matrix_dijkstra[indexVisites[j - 1]][indexVisites[j]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j + 1]].second
+						+ matrix_dijkstra[indexVisites[i - 1]][indexVisites[j]].second + matrix_dijkstra[indexVisites[j]][indexVisites[i + 1]].second
+						+ matrix_dijkstra[indexVisites[j - 1]][indexVisites[i]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j + 1]].second;
+				}
+				else
+				{
+					LongCamiActual = LongCamiActual
+						- matrix_dijkstra[indexVisites[i - 1]][indexVisites[i]].second - matrix_dijkstra[indexVisites[j]][indexVisites[j + 1]].second
+						+ matrix_dijkstra[indexVisites[i - 1]][indexVisites[j]].second + matrix_dijkstra[indexVisites[i]][indexVisites[j + 1]].second;
+				}
+				
 				if (LongCamiActual < LongCamiMesCurt) {
 					LongCamiMesCurt = LongCamiActual;
 					std::swap(indexVisites[i], indexVisites[j]);
